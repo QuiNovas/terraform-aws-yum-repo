@@ -1,3 +1,13 @@
+variable "dead_letter_arn" {
+  description = "The arn for the SNS topic that handles dead letters"
+  type        = "string"
+}
+
+variable "kms_key_arn" {
+  description = "The arn of the KMS key used to encrypt the environment variables"
+  type        = "string"
+}
+
 variable "log_bucket_id" {
   description = "The name or id of the log bucket to use for S3 server logging"
   type        = "string"
