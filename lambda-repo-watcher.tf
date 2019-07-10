@@ -27,7 +27,6 @@ module "repo_watcher" {
   policy_arns = [
     aws_iam_policy.repo_watcher.arn,
   ]
-  policy_arns_count = 1
   runtime           = "python2.7"
   source            = "QuiNovas/lambdalambdalambda/aws"
   version           = "3.0.1"
