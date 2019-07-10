@@ -1,13 +1,13 @@
 resource "aws_s3_bucket" "yum_repo" {
-  acl = "public-read"
+  acl    = "public-read"
   bucket = "${var.name_prefix}-yum-repo"
   lifecycle {
     prevent_destroy = true
   }
   lifecycle_rule {
     abort_incomplete_multipart_upload_days = 7
-    id      = "versions"
-    enabled = true
+    id                                     = "versions"
+    enabled                                = true
     expiration {
       expired_object_delete_marker = true
     }
@@ -20,7 +20,7 @@ resource "aws_s3_bucket" "yum_repo" {
     }
   }
   logging {
-    target_bucket = "${var.log_bucket_id}"
+    target_bucket = var.log_bucket_id
     target_prefix = "s3/${var.name_prefix}-yum-repo/"
   }
   versioning {
@@ -33,45 +33,45 @@ resource "aws_s3_bucket" "yum_repo" {
 
 data "aws_iam_policy_document" "yum_repo_s3" {
   statement {
-    actions   = [
+    actions = [
       "s3:GetObject*",
       "s3:ListBucket",
-      "s3:ListBucketVersions"
+      "s3:ListBucketVersions",
     ]
     condition {
-      test = "IpAddress"
-      values = ["${var.repo_whitelists}"]
+      test     = "IpAddress"
+      values   = var.repo_whitelists
       variable = "aws:SourceIp"
     }
     principals {
       identifiers = [
-        "*"
+        "*",
       ]
       type = "AWS"
     }
     resources = [
-      "${aws_s3_bucket.yum_repo.arn}",
-      "${aws_s3_bucket.yum_repo.arn}/*"
+      aws_s3_bucket.yum_repo.arn,
+      "${aws_s3_bucket.yum_repo.arn}/*",
     ]
-    sid       = "AllowAnonymousReads"
+    sid = "AllowAnonymousReads"
   }
 }
 
 resource "aws_s3_bucket_policy" "yum_repo" {
-  bucket = "${aws_s3_bucket.yum_repo.id}"
-  policy = "${data.aws_iam_policy_document.yum_repo_s3.json}"
+  bucket = aws_s3_bucket.yum_repo.id
+  policy = data.aws_iam_policy_document.yum_repo_s3.json
 }
 
 resource "aws_s3_bucket_notification" "yum_repo" {
-  depends_on  = ["aws_lambda_permission.repo_watcher"]
-  bucket      = "${aws_s3_bucket.yum_repo.id}"
+  depends_on = [aws_lambda_permission.repo_watcher]
+  bucket     = aws_s3_bucket.yum_repo.id
   lambda_function {
-    lambda_function_arn = "${aws_lambda_function.repo_watcher.arn}"
-    events              = [
+    lambda_function_arn = module.repo_watcher.arn
+    events = [
       "s3:ObjectCreated:*",
-      "s3:ObjectRemoved:*"
+      "s3:ObjectRemoved:*",
     ]
-    filter_suffix       = ".rpm"
+    filter_suffix = ".rpm"
   }
 }
 
@@ -84,14 +84,17 @@ data "template_file" "index_html" {
 </body>
 </html>
 HTML
-  vars {
-    name_prefix = "${var.name_prefix}"
+
+
+  vars = {
+    name_prefix = var.name_prefix
   }
 }
 
 resource "aws_s3_bucket_object" "index_html" {
-  bucket  = "${aws_s3_bucket.yum_repo.bucket}"
-  content = "${data.template_file.index_html.rendered}"
+  bucket = aws_s3_bucket.yum_repo.bucket
+  content = data.template_file.index_html.rendered
   content_type = "text/html"
-  key     = "index.html"
+  key = "index.html"
 }
+
